@@ -57,14 +57,27 @@ def install_missing_modules(bot_path, language):
     requirements_path = os.path.join(os.path.dirname(bot_path), "requirements.txt")
     try:
         if language == "python3" and os.path.exists(requirements_path):
-            subprocess.run(["sudo", "python3", "-m", "pip", "install", "-r", requirements_path, "--break-system-packages"], check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            result = subprocess.run(
+                ["sudo", "python3", "-m", "pip", "install", "-r", requirements_path, "--break-system-packages"],
+                check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
+            logging.info(f"Installed missing modules for {bot_path}: {result.stdout}")
         elif language == "go run":
-            subprocess.run(["go", "get", "-d", "./..."], cwd=os.path.dirname(bot_path), check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            result = subprocess.run(
+                ["go", "get", "-d", "./..."],
+                cwd=os.path.dirname(bot_path),
+                check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
+            logging.info(f"Installed missing modules for {bot_path}: {result.stdout}")
         elif language == "node" and os.path.exists(os.path.join(os.path.dirname(bot_path), "package.json")):
-            subprocess.run(["npm", "install"], cwd=os.path.dirname(bot_path), check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        logging.info(f"Installed missing modules for {bot_path}")
+            result = subprocess.run(
+                ["npm", "install"],
+                cwd=os.path.dirname(bot_path),
+                check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
+            logging.info(f"Installed missing modules for {bot_path}: {result.stdout}")
     except subprocess.CalledProcessError as e:
-        logging.error(f"Failed to install missing modules for {bot_path}: {e}")
+        logging.error(f"Failed to install missing modules for {bot_path}: {e.stderr}")
 
 def start_bot(bot_name):
     bot_path, language = BOTS.get(bot_name, (None, None))
