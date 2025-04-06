@@ -11,7 +11,7 @@ from time import perf_counter
 # Telegram bot API details
 api_id = 21169722
 api_hash = "99190a46eadbfbb4a857215c5cc4637e"
-bot_token = "8094419090:AAGgGQH7i9-0cRZ-xvP76U6QOrHtf5fJQPA"
+bot_token = "8094419090:AAGgGQ7i9-0cRZ-xvP76U6QOrHtf5fJQPA"
 
 # Your Telegram user IDs to send notifications
 admin_user_ids = [6387028671, 6816341239, 6204011131]  # Replace with actual admin user IDs
@@ -24,7 +24,7 @@ authorized_users = {}  # Dictionary to store user_id and authorization time
 app = Client("bot_manager", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
 
 # Directory containing bot subdirectories
-BOTS_DIR = "/home/container"
+BOTS_DIR = "/home/ubuntu/bots"
 processes = {}
 
 # Set up logging
@@ -35,33 +35,42 @@ def detect_bots():
     bots = {}
     if os.path.exists(BOTS_DIR):
         for item in os.listdir(BOTS_DIR):
-            bot_path = os.path.join(BOTS_DIR, item, "main.py")
-            if os.path.isfile(bot_path):
-                bots[item] = bot_path
+            bot_path = os.path.join(BOTS_DIR, item, "main")
+            if os.path.isfile(bot_path + ".py"):
+                bots[item] = (bot_path + ".py", "python3")
+            elif os.path.isfile(bot_path + ".go"):
+                bots[item] = (bot_path + ".go", "go run")
+            elif os.path.isfile(bot_path + ".js"):
+                bots[item] = (bot_path + ".js", "node")
     logging.info(f"Detected bots: {list(bots.keys())}")
     return bots
 
 BOTS = detect_bots()
 
 # Helper functions for bot management
-def install_missing_modules(bot_path):
+def install_missing_modules(bot_path, language):
     try:
-        subprocess.run(["pip", "install", "-r", os.path.join(os.path.dirname(bot_path), "requirements.txt")], check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if language == "python3":
+            subprocess.run(["pip", "install", "-r", os.path.join(os.path.dirname(bot_path), "requirements.txt")], check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        elif language == "go run":
+            subprocess.run(["go", "get", "-d", "./..."], cwd=os.path.dirname(bot_path), check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        elif language == "node":
+            subprocess.run(["npm", "install"], cwd=os.path.dirname(bot_path), check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         logging.info(f"Installed missing modules for {bot_path}")
     except subprocess.CalledProcessError as e:
         logging.error(f"Failed to install missing modules for {bot_path}: {e}")
 
 def start_bot(bot_name):
-    bot_path = BOTS.get(bot_name)
+    bot_path, language = BOTS.get(bot_name, (None, None))
     if not bot_path:
         return f"<b>Bot '{bot_name}' not found!</b>"
     if bot_name in processes:
         return f"Bot '{bot_name}' is already running!"
     logging.info(f"Starting bot '{bot_name}'")
-    install_missing_modules(bot_path)
-    log_file = f"/home/container/{bot_name}_log.txt"
+    install_missing_modules(bot_path, language)
+    log_file = f"/home/ubuntu/logs/{bot_name}_log.txt"
     with open(log_file, "w") as log:
-        process = subprocess.Popen(["python3", bot_path], stdout=log, stderr=log)
+        process = subprocess.Popen([language, bot_path], stdout=log, stderr=log)
         process.start_time = time.time()
         processes[bot_name] = process
     logging.info(f"Bot '{bot_name}' started")
@@ -78,14 +87,14 @@ def stop_bot(bot_name):
     return f"Bot '{bot_name}' is not running."
 
 def get_logs(bot_name):
-    log_file = f"/home/container/{bot_name}_log.txt"
+    log_file = f"/home/ubuntu/logs/{bot_name}_log.txt"
     if os.path.exists(log_file):
         with open(log_file, "r") as log:
             return f"<b>Logs for {bot_name}:</b>\n<pre>{log.read()[-4000:]}</pre>"
     return "<b>No logs found.</b>"
 
 def update_bot(bot_name):
-    bot_path = os.path.dirname(BOTS.get(bot_name, ""))
+    bot_path = os.path.dirname(BOTS.get(bot_name, ("", ""))[0])
     if not bot_path or not os.path.isdir(bot_path):
         return f"<b>Bot '{bot_name}' not found!</b>"
     try:
@@ -131,7 +140,7 @@ def clone_repo(repo_url):
     try:
         logging.info(f"Cloning repository '{repo_name}'")
         subprocess.run(["git", "clone", repo_url, clone_path], check=True, text=True, stdout=subprocess.PIPE)
-        BOTS[repo_name] = os.path.join(clone_path, "main.py")
+        BOTS[repo_name] = detect_bots().get(repo_name)
         logging.info(f"Repository '{repo_name}' cloned successfully")
         return f"<b>Repository '{repo_name}' cloned successfully.</b>"
     except subprocess.CalledProcessError as e:
@@ -222,7 +231,6 @@ async def password_listener(_, message: Message):
         authorized_users[message.from_user.id] = time.time()
         await message.reply("<b>Password accepted. Temporary access granted for 1 hour.</b>")
         await message.delete()
-
 
 @app.on_callback_query()
 async def callback_handler(client, callback_query):
