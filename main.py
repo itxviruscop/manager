@@ -11,7 +11,7 @@ from time import perf_counter
 # Telegram bot API details
 api_id = 21169722
 api_hash = "99190a46eadbfbb4a857215c5cc4637e"
-bot_token = "6434602877:AAEpzZ9G-MXVYj1dei65m97sb8obTMk7C3Y"
+bot_token = "8094419090:AAGgGQ7i9-0cRZ-xvP76U6QOrHtf5fJQPA"
 
 # Your Telegram user IDs to send notifications
 admin_user_ids = [6387028671, 6816341239, 6204011131]  # Replace with actual admin user IDs
@@ -25,7 +25,12 @@ app = Client("bot_manager", api_id=api_id, api_hash=api_hash, bot_token=bot_toke
 
 # Directory containing bot subdirectories
 BOTS_DIR = "/home/ubuntu/bots"
+LOGS_DIR = "/home/ubuntu/logs"
 processes = {}
+
+# Ensure bots and logs directories exist
+os.makedirs(BOTS_DIR, exist_ok=True)
+os.makedirs(LOGS_DIR, exist_ok=True)
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -49,12 +54,13 @@ BOTS = detect_bots()
 
 # Helper functions for bot management
 def install_missing_modules(bot_path, language):
+    requirements_path = os.path.join(os.path.dirname(bot_path), "requirements.txt")
     try:
-        if language == "python3":
-            subprocess.run(["pip", "install", "-r", os.path.join(os.path.dirname(bot_path), "requirements.txt")], check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if language == "python3" and os.path.exists(requirements_path):
+            subprocess.run(["pip", "install", "-r", requirements_path], check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         elif language == "go run":
             subprocess.run(["go", "get", "-d", "./..."], cwd=os.path.dirname(bot_path), check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        elif language == "node":
+        elif language == "node" and os.path.exists(os.path.join(os.path.dirname(bot_path), "package.json")):
             subprocess.run(["npm", "install"], cwd=os.path.dirname(bot_path), check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         logging.info(f"Installed missing modules for {bot_path}")
     except subprocess.CalledProcessError as e:
@@ -68,7 +74,7 @@ def start_bot(bot_name):
         return f"Bot '{bot_name}' is already running!"
     logging.info(f"Starting bot '{bot_name}'")
     install_missing_modules(bot_path, language)
-    log_file = f"/home/ubuntu/logs/{bot_name}_log.txt"
+    log_file = os.path.join(LOGS_DIR, f"{bot_name}_log.txt")
     with open(log_file, "w") as log:
         process = subprocess.Popen([language, bot_path], stdout=log, stderr=log)
         process.start_time = time.time()
@@ -87,7 +93,7 @@ def stop_bot(bot_name):
     return f"Bot '{bot_name}' is not running."
 
 def get_logs(bot_name):
-    log_file = f"/home/ubuntu/logs/{bot_name}_log.txt"
+    log_file = os.path.join(LOGS_DIR, f"{bot_name}_log.txt")
     if os.path.exists(log_file):
         with open(log_file, "r") as log:
             return f"<b>Logs for {bot_name}:</b>\n<pre>{log.read()[-4000:]}</pre>"
