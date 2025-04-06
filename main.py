@@ -33,7 +33,7 @@ os.makedirs(BOTS_DIR, exist_ok=True)
 os.makedirs(LOGS_DIR, exist_ok=True)
 
 # Set up logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levellevel)s - %(message)s')
 
 # Detect bots dynamically
 def detect_bots():
@@ -58,7 +58,7 @@ def install_missing_modules(bot_path, language):
     try:
         if language == "python3" and os.path.exists(requirements_path):
             result = subprocess.run(
-                ["sudo", "python3", "-m", "pip", "install", "-r", requirements_path, "--break-system-packages"],
+                ["sudo", "/usr/bin/python3", "-m", "pip", "install", "-r", requirements_path, "--break-system-packages"],
                 check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
             )
             logging.info(f"Installed missing modules for {bot_path}: {result.stdout}")
