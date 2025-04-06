@@ -58,7 +58,7 @@ def install_missing_modules(bot_path, language):
     try:
         if language == "python3" and os.path.exists(requirements_path):
             result = subprocess.run(
-                ["sudo", "/usr/bin/python3", "-m", "pip", "install", "-r", requirements_path, "--break-system-packages"],
+                ["/usr/bin/python3", "-m", "pip", "install", "-r", requirements_path, "--break-system-packages"],
                 check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
             )
             logging.info(f"Installed missing modules for {bot_path}: {result.stdout}")
