@@ -90,7 +90,11 @@ def start_bot(bot_name):
     log_file = os.path.join(LOGS_DIR, f"{bot_name}_log.txt")
     try:
         with open(log_file, "w") as log:
-            process = subprocess.Popen([language, bot_path], stdout=log, stderr=log)
+            # Ensure the proper command for Go is used
+            if language == "go run":
+                process = subprocess.Popen(["go", "run", bot_path], stdout=log, stderr=log)
+            else:
+                process = subprocess.Popen([language, bot_path], stdout=log, stderr=log)
             process.start_time = time.time()
             processes[bot_name] = process
         logging.info(f"Bot '{bot_name}' started")
