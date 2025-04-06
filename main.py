@@ -11,7 +11,7 @@ from time import perf_counter
 # Telegram bot API details
 api_id = 21169722
 api_hash = "99190a46eadbfbb4a857215c5cc4637e"
-bot_token = "8094419090:AAGgGQ7i9-0cRZ-xvP76U6QOrHtf5fJQPA"
+bot_token = "6434602877:AAEpzZ9G-MXVYj1dei65m97sb8obTMk7C3Y"
 
 # Your Telegram user IDs to send notifications
 admin_user_ids = [6387028671, 6816341239, 6204011131]  # Replace with actual admin user IDs
